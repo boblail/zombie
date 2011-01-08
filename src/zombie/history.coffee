@@ -127,7 +127,7 @@ class History
           path = "/#{path}" unless path[0] == "/"
           headers.host = url.host
           request = client.request(method, path, headers)
-
+          
           request.on "response", (response)=>
             response.setEncoding "utf8"
             body = ""
@@ -135,18 +135,30 @@ class History
             response.on "end", =>
               browser.response = [response.statusCode, response.headers, body]
               done null, { status: response.statusCode, headers: response.headers, body: body }
+              
+              update_cookie = ()->
+                cookie = response.headers["set-cookie"]
+                if cookie?
+                  cookie_hostname = url.hostname
+                  cookie_pathname = (cookie.match(/path=(.*)($|;)/)||[null,'/'])[1]
+                  sys = require('sys');
+                  sys.puts('[' + cookie + ', ' + cookie_hostname + ', ' + cookie_pathname + ']');
+                  browser.cookies(cookie_hostname, cookie_pathname).update cookie
+              
               switch response.statusCode
                 when 200
-                  browser.cookies(url.hostname, url.pathname).update response.headers["set-cookie"]
+                  update_cookie()
+                  # browser.cookies(url.hostname, url.pathname).update response.headers["set-cookie"]
                   document.open()
-                  document.write body
+                  document.write body || '<html>\r\n  <head></head>\r\n  <body></body>\r\n</html>'
                   document.close()
                   if document.documentElement
                     browser.emit "loaded", browser
                   else
                     error = "Could not parse document at #{URL.format(url)}"
                 when 301, 302, 303, 307
-                  browser.cookies(url.hostname, url.pathname).update response.headers["set-cookie"]
+                  update_cookie
+                  # browser.cookies(url.hostname, url.pathname).update response.headers["set-cookie"]
                   redirect = URL.parse(URL.resolve(url, response.headers["location"]))
                   stack[index] = new Entry(this, redirect)
                   browser.emit "redirected", redirect
