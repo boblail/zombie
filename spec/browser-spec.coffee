@@ -19,6 +19,8 @@ brains.get "/scripted", (req, res)-> res.send """
     </head>
     <body>Hello World</body>
     <script>
+      this.propertyOnGlobal = "Look at me, I'm on window!";
+      var globalVariable = "Me too";
       document.title = "Nice";
       $(function() { $("title").text("Awesome") })
     </script>
@@ -266,5 +268,10 @@ vows.describe("Browser").addBatch(
       assert.ok browser.prompted("gender")
       assert.ok browser.prompted("location")
       assert.ok !browser.prompted("not asked")
+
+  "the global context":
+    zombie.wants "http://localhost:3003/scripted"
+      "should be window": (browser)-> assert.equal "Look at me, I'm on window!", browser.window.propertyOnGlobal
+      "should soak up vars": (browser)-> assert.equal "Me too", browser.window.globalVariable
     
 ).export(module)
