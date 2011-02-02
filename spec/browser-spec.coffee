@@ -134,6 +134,26 @@ brains.get "/iframe", (req, res)-> res.send """
   </html>
   """
 
+brains.get "/juggy", (req, res)-> res.send """
+  <html>
+  <body>
+    <div id="div">9</div>
+    
+    <script type="text/javascript">
+      var cal = document.getElementById("div");
+      
+      //empty cal
+      while ( cal.firstChild ) {
+        cal.removeChild( cal.firstChild );
+      }
+      
+      //crate new text node
+      cal.appendChild(document.createTextNode( 10 ));
+    </script>
+  </body>
+  </html>
+  """
+
 vows.describe("Browser").addBatch(
   "open page":
     zombie.wants "http://localhost:3003/scripted"
@@ -390,5 +410,9 @@ vows.describe("Browser").addBatch(
         "should still reference the parent": (browser)->
           assert.ok browser.window == browser.querySelector("iframe").window.parent
 
+  "juggy":
+    zombie.wants "http://localhost:3003/juggy"
+      "should work": (browser)->
+        assert.equal "10", browser.document.querySelector("#div").innerHTML
 
 ).export(module)
